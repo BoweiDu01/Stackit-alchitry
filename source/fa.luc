@@ -1,0 +1,13 @@
+// fa.luc 
+module fa (
+    input a,
+    input b,
+    input ci,
+    output co,
+    output s
+  ){
+   always{  
+    s = a^b^ci;
+    co = (a&b)|((a^b)&ci);
+  }
+}

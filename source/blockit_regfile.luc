@@ -1,0 +1,142 @@
+module blockit_regfile (
+    input clk,  // clock
+    input rst,  // reset
+    input write_address[4], // write address
+    input we, // write enable
+    input data[16], // data in
+    
+    
+    input read_address_a[4], //address port a 
+    input read_address_b[4], //address port b
+
+    output out_a[16], //read port a
+    output out_b[16], // read port b
+    //debug
+    output currentrow[16],
+    output previousrow[16],
+    output rowcounter[16],
+    output blockdirection[1],
+    output currenttimer[16],
+    output combocount[16],
+    output score[16],
+    output stack1[16],
+    output stack2[16],
+    output stack3[16],
+    output stack4[16],
+    output stack5[16],
+    output ticklimit[16],
+    output distfromleft[16]
+    
+  ) 
+
+{
+
+  .clk(clk){
+    .rst(rst){
+      dff current_row[16](#INIT(b1111100000000000)); 
+      dff previous_row[16](#INIT(b1111111111111111)); 
+      dff block_direction[1](#INIT(b0));
+      dff row_counter[16](#INIT(1));
+      dff totalscore[16](#INIT(0));
+      dff combo_count[16](#INIT(0));
+      dff current_timer[16](#INIT(0));
+      dff tick_limit[16](#INIT(0));
+      dff stack_1[16](#INIT(0));
+      dff stack_2[16](#INIT(0));
+      dff stack_3[16](#INIT(0));
+      dff stack_4[16](#INIT(0));
+      dff stack_5[16](#INIT(0));
+      dff dist_from_left[16](#INIT(0));
+      dff temp2[16](#INIT(0));
+      dff temp[16](#INIT(0));  
+
+
+    }
+  }
+
+  always {
+    //write port
+    if (we){
+      case(write_address){
+        b0000 : current_row.d = data;
+        b0001 : previous_row.d = data;
+        b0010 : row_counter.d = data;
+        b0011 : totalscore.d = data;
+        b0100 : combo_count.d = data;
+        b0101 : current_timer.d = data;
+        b0110 : block_direction.d = data[0];
+        b0111 : tick_limit.d = data;
+        b1001 : stack_1.d = data; 
+        b1001 : stack_2.d = data;
+        b1010 : stack_3.d = data;
+        b1011 : stack_4.d = data;
+        b1100 : stack_5.d = data;
+        b1101 : dist_from_left.d = data;
+        b1110 : temp2.d = data;
+        b1111 : temp.d = data;
+      }
+    
+    
+      
+    //read port a
+    case(read_address_a){
+        b0000 : out_a = current_row.q;
+        b0001 : out_a = previous_row.q;
+        b0010 : out_a = row_counter.q;
+        b0011 : out_a = totalscore.q;
+        b0100 : out_a = combo_count.q;
+        b0101 : out_a = current_timer.q;
+        b0110 : out_a = block_direction.q;
+        b0111 : out_a = tick_limit.q;
+        b1001 : out_a = stack_1.q; 
+        b1001 : out_a = stack_2.q;
+        b1010 : out_a = stack_3.q;
+        b1011 : out_a = stack_4.q;
+        b1100 : out_a = stack_5.q;
+        b1101 : out_a = dist_from_left.q;
+        b1110 : out_a = temp2.q;
+        b1111 : out_a = temp.q;
+        default : out_a = 0;
+      }
+  
+    
+    //read port b
+    case(read_address_b){
+        b0000 : out_b = current_row.q;
+        b0001 : out_b = previous_row.q;
+        b0010 : out_b = row_counter.q;
+        b0011 : out_b = totalscore.q;
+        b0100 : out_b = combo_count.q;
+        b0101 : out_b = current_timer.q;
+        b0110 : out_b = block_direction.q;
+        b0111 : out_b = tick_limit.q;
+        b1001 : out_b = stack_1.q; 
+        b1001 : out_b = stack_2.q;
+        b1010 : out_b = stack_3.q;
+        b1011 : out_b = stack_4.q;
+        b1100 : out_b = stack_5.q;
+        b1101 : out_b = dist_from_left.q;
+        b1110 : out_b = temp2.q;
+        b1111 : out_b = temp.q;
+        default : out_b = 0;
+      }
+  }
+    //For debuggingcurrentrow[16],
+
+        currentrow[15:0] = current_row.q;
+        previousrow[15:0] = previous_row.q;
+        rowcounter[15:0] = row_counter.q ;
+        score[15:0] = totalscore.q;
+        combocount[15:0] = combo_count.q;
+        currenttimer[15:0] = current_timer.q;
+        blockdirection[0] = block_direction.q;
+        stack1[15:0] = stack_1.q;
+        stack2[15:0] = stack_2.q;
+        stack3[15:0] = stack_3.q;
+        stack4[15:0] = stack_4.q;
+        stack5[15:0] = stack_5.q;
+        distfromleft[15:0] = dist_from_left.q;
+        ticklimit[15:0] = tick_limit.q;
+
+}
+

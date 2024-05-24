@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="blockit" board="Alchitry Au" language="Lucid" version="3">
+  <files>
+    <src>rca.luc</src>
+    <src>compare.luc</src>
+    <component>pipeline.luc</component>
+    <src>x_bit_left_shifter.luc</src>
+    <src>x_bit_right_shifter.luc</src>
+    <component>counter.luc</component>
+    <src top="true">au_top.luc</src>
+    <src>decimal_counter.luc</src>
+    <src>blockit_regfile.luc</src>
+    <src>blockit_beta.luc</src>
+    <src>adder.luc</src>
+    <src>shifter.luc</src>
+    <component>reset_conditioner.luc</component>
+    <src>multi_dec_ctr.luc</src>
+    <src>reverser.luc</src>
+    <component>encoder.luc</component>
+    <component>button_conditioner.luc</component>
+    <src>x_bit_arithmetic_right_shifter.luc</src>
+    <src>mux_4.luc</src>
+    <component>simple_dual_ram.v</component>
+    <src>multiplier.luc</src>
+    <src>multi_seven_seg.luc</src>
+    <src>alu.luc</src>
+    <src>blockit_controlunit.luc</src>
+    <src>variable_counter.luc</src>
+    <component>decoder.luc</component>
+    <src>fa.luc</src>
+    <component>pn_gen.luc</component>
+    <src>seven_seg.luc</src>
+    <src>x_bit_right_shifter_arithmetic.luc</src>
+    <src>mux_2.luc</src>
+    <component>edge_detector.luc</component>
+    <src>boolean.luc</src>
+    <constraint>io.acf</constraint>
+    <constraint lib="true">au.xdc</constraint>
+    <constraint>alchitry.acf</constraint>
+  </files>
+</project>

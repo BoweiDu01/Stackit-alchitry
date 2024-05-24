@@ -1,0 +1,389 @@
+module blockit_controlunit (
+    input clk,  // clock
+    input rst,  // reset
+    input buttonpress, // when button edge is detected
+    input decrease_timer, // when slowclock == 1
+    input rowclock1, // for 1st to 4th row speed 
+
+    input regfile_datain[16], //direct reading of regfile data from regfile_read_address_b
+    
+    output alufn[6],
+    output asel[3],
+    output bsel[3],
+    output alu_out_sel[2], //otherwise known as wdsel 
+    output regfile_write_address[4],
+    output regfile_read_address_a[4],
+    output regfile_read_address_b[4],
+    output we_regfile,
+    output decimal_counter_increase,
+    output decimal_counter_rst,
+    output debug[4]
+  ) {
+
+
+  .clk(clk) {
+      fsm game_fsm = {
+      START_SET_TIMER, //Fail Condition 1 Timer
+      //INC_COUNTER, // 7 seg counter
+      DECREASE_GAMETIMER, 
+      CHECK_GAMETIMER,
+      BRANCH_GAMETIMER,
+      
+      INC_TICKCOUNT,
+      CHECK_TICKCOUNT,
+      BRANCH_TICKCOUNT,
+      RESET_TICKCOUNT,
+      DEC_TICKLIMIT,
+      
+      IDLE,
+      BRANCH_BLOCK_DIR,
+      CURR_SHIFT_RIGHT, //Row shifting logic
+      BRANCH_SHIFT_RIGHT,
+      SET_SHIFT_LEFT,
+      CURR_SHIFT_LEFT,
+      BRANCH_SHIFT_LEFT,
+      SET_SHIFT_RIGHT,
+      
+      CURR_PREV_ROW_COMPARE_BITWISE, //Determining current row to be saved into next cycle's previous row
+      BRANCH_CURR_PREV_ROW_COMPARE_BITWISE, // Fail Condition 2 Curr and Prev row fails to align
+      REASSIGN_CURR_ROW,
+      CURR_PREV_ROW_CMPEQ,
+      BRANCH_CURR_PREV_ROW_CMPEQ,
+      REASSIGN_PREV_ROW,
+      
+      CHECK_DISTFROMLEFT, //Determining encoding logic
+      BRANCH_DISTFROMLEFT,
+      INC_DISTFROMLEFT,
+      SHIFT_DFL_BIT_CHECKED,
+
+      CHECK_BLOCK_LEN,
+      BRANCH_BLOCK_LEN,
+      INC_BLOCK_LEN,
+      SHIFT_BL_BIT_CHECKED,
+
+      BRANCH_STACK,
+
+     
+      INCREASE_HEIGHT_STACK_5,
+      CHECK_DFL_ZERO_STACK_5,
+      BRANCH_DFL_INSERT_STACK_5,
+      STACK_5_INSERT_DFL,
+
+      INCREASE_HEIGHT_STACK_4,
+      CHECK_DFL_ZERO_STACK_4,
+      BRANCH_DFL_INSERT_STACK_4,
+      STACK_4_INSERT_DFL,
+
+      INCREASE_HEIGHT_STACK_3,
+      CHECK_DFL_ZERO_STACK_3,
+      BRANCH_DFL_INSERT_STACK_3,
+      STACK_3_INSERT_DFL,
+
+      INCREASE_HEIGHT_STACK_2,
+      CHECK_DFL_ZERO_STACK_2,
+      BRANCH_DFL_INSERT_STACK_2,
+      STACK_2_INSERT_DFL,
+
+      INCREASE_HEIGHT_STACK_1,
+      CHECK_DFL_ZERO_STACK_1,
+      BRANCH_DFL_INSERT_STACK_1,
+      STACK_1_INSERT_DFL,
+
+      REASSIGN_CURR_BLOCK,
+      
+      
+      INCREASE_COMBO_COUNT, //Determines scoring logic
+      RESET_COMBO_COUNT,
+      INCREASE_SCORE,
+      
+      INCREASE_ROWCOUNTER, //Fail Condition 3 Max rows played
+      BRANCH_ROWCOUNTER,
+      
+      CHECK_SCORELT30, // Final score check if fail conditions are met
+      BRANCH_CHECK_SCORELT30,
+      BAD_SCORE,
+      CHECK_SCOREGT45,
+      BRANCH_CHECK_SCOREGT45,
+      AVG_SCORE,
+      GOOD_SCORE,
+      GAMEOVER};
+
+    }
+  
+    always{
+        // standard setting unless otherwise overwritten by each case 
+    alufn = 0;
+    asel = b00; 
+    bsel = b00;
+    we_regfile = 0; // default don't write into regfile
+    regfile_write_address = 1111; // defaults to temp reg file
+    regfile_read_address_a = 0000; // default 0
+    regfile_read_address_b = 0000; 
+    alu_out_sel = 0;
+    debug = 0;
+   
+    decimal_counter_increase = 0;
+    decimal_counter_rst = 0;
+        
+    if (rst){
+        game_fsm.d = game_fsm.START_SET_TIMER;
+        decimal_counter_rst = 1;
+    }
+    else{
+    case(game_fsm.q){
+      
+       game_fsm.START_SET_TIMER: 
+        alufn = b000000;                             //ADD
+        asel = b10;                                  //30
+        we_regfile = 1; 
+        regfile_write_address = b0101;               //timer reg
+        regfile_read_address_b = b1111;              //direct read (temp reg)
+        //if counter is set
+        game_fsm.d = game_fsm.IDLE;
+         
+              
+       game_fsm.DECREASE_GAMETIMER:
+        alufn = b000001;                         //SUB
+        regfile_read_address_a = b0101;          //timer reg
+        asel = b00; 
+        bsel = b01;                              //constant 1
+        we_regfile = 1;
+        regfile_write_address = b1000;
+        game_fsm.d = game_fsm.IDLE;
+          
+      game_fsm.CHECK_GAMETIMER:
+        alufn = b110011;                         //CMPEQ
+        regfile_read_address_a = b0101;          //timer reg
+        asel = b00;
+        bsel = b10;                              //constant 0
+        we_regfile = 1;
+        regfile_write_address = b1111;           //temp eg 
+        game_fsm.d = game_fsm.BRANCH_GAMETIMER;
+      
+      game_fsm.BRANCH_GAMETIMER:
+        regfile_read_address_b = b1111;          //temp reg
+        if (~regfile_datain[0]){                 //if timer is not zero
+          game_fsm.d = game_fsm.DECREASE_GAMETIMER;
+          }
+        else{
+          game_fsm.d = game_fsm.CHECK_SCORELT30;
+          }        
+                           
+      game_fsm.CURR_SHIFT_RIGHT: //Shift current block to the right
+        alufn = b100001; //SHR 
+        regfile_read_address_a = b0000; // read value of current_row
+        asel = b00; // read from regfile 
+        bsel = b01; // shift by 1
+        we_regfile = 1;  
+        regfile_write_address = b0000;
+        game_fsm.d = game_fsm.BRANCH_SHIFT_RIGHT;  
+          
+      game_fsm.BRANCH_SHIFT_RIGHT: // Check if block is at right edge
+        regfile_read_address_b = b0000; // Check current_row LSB, if 1, change direction. else go back to idle 
+        if (regfile_datain[0] == 1){
+            game_fsm.d = game_fsm.SET_SHIFT_LEFT;}
+        else{      
+            game_fsm.d = game_fsm.IDLE;}
+
+      game_fsm.SET_SHIFT_LEFT: // Change block direction to shift left; SHL is 1, then go IDLE
+        alufn = b000000; //Add
+        regfile_read_address_a = b0110; // value of block direction: 0 -> SHR, 1 -> SHL
+        asel = b00; // read block direction from regfile 
+        bsel = b01; // by 1
+        we_regfile = 1;  
+        regfile_write_address = b0110;
+        game_fsm.d = game_fsm.IDLE;                        
+              
+
+      game_fsm.CURR_SHIFT_LEFT: //Shift current block to the left
+        alufn = b100000; //SHL
+        regfile_read_address_a = b0000; // read value of current_row
+        asel = b00; // read from regfile 
+        bsel = b01; // shift by 1
+        we_regfile = 1; //update the regfile address content
+        regfile_write_address = b0000; // address of current_row
+        game_fsm.d = game_fsm.BRANCH_SHIFT_LEFT;  
+          
+      game_fsm.BRANCH_SHIFT_LEFT:_// Check if block is at left edge
+        regfile_read_address_b = b0000; // Check current_row MSB, if 1, change direction. else go back to idle 
+        if (regfile_datain[15] == 1){
+            game_fsm.d = game_fsm.SET_SHIFT_RIGHT;}
+        else{      
+            game_fsm.d = game_fsm.IDLE;
+            }
+
+      game_fsm.SET_SHIFT_RIGHT: // Change block direction to shift right; SHL is 1, then go IDLE
+        alufn = b000001; //Subtract
+        regfile_read_address_a = b0110; // value of block direction: 0 -> SHR, 1 -> SHL
+        asel = b00; // read block direction from regfile 
+        bsel = b01; // by 1
+        we_regfile = 1;  
+        regfile_write_address = b0110;
+        game_fsm.d = game_fsm.IDLE; 
+                
+      game_fsm.CURR_PREV_ROW_COMPARE_BITWISE: 
+        alufn = b011000; //AND 
+        regfile_read_address_a = b0000; // read value of current_row
+        regfile_read_address_b = b0001; // read value of prev_row      
+        asel = b00; // read from regfile a
+        bsel = b00; // read from regfile b
+        we_regfile = 1;  
+        regfile_write_address = b1111; // write into temp reg
+        game_fsm.d = game_fsm.BRANCH_CURR_PREV_ROW_COMPARE_BITWISE;
+              
+      game_fsm.BRANCH_CURR_PREV_ROW_COMPARE_BITWISE: //Determines the next curr row to be passed to DFF
+        regfile_read_address_b = b1111;
+        if (regfile_datain[15:0] == 16b0){
+              game_fsm.d = game_fsm.CHECK_SCORELT30;}
+        else{
+              game_fsm.d = game_fsm.REASSIGN_CURR_ROW;}              
+  
+      game_fsm.REASSIGN_CURR_ROW: //writes the next curr row into curr row DFF
+        alufn = b000000; //ADD 
+        regfile_read_address_b = b1111; // read value of temp_reg      
+        asel = b01; // read from regfile a
+        bsel = b00; // read from regfile b
+        we_regfile = 1;  
+        regfile_write_address = b0000; // write into curr_row
+        game_fsm.d = game_fsm.CURR_PREV_ROW_CMPEQ;
+                  
+      game_fsm.CURR_PREV_ROW_CMPEQ: //Determine whether combo count will increase if both prev and curr row is the same
+        alufn = b110011; //CMPEQ 
+        regfile_read_address_a = b0000; // read value of current_row
+        regfile_read_address_b = b0001; // read value of prev_row      
+        asel = b00; // read from regfile a
+        bsel = b00; // read from regfile b
+        we_regfile = 1;  
+        regfile_write_address = b1111; // write into temp reg
+        game_fsm.d = game_fsm.BRANCH_CURR_PREV_ROW_CMPEQ;
+                  
+      game_fsm.BRANCH_CURR_PREV_ROW_CMPEQ: 
+        regfile_read_address_b = b1111;
+        if (regfile_datain[0] == 1){
+              game_fsm.d = game_fsm.INCREASE_COMBO_COUNT;}
+        else{
+              game_fsm.d = game_fsm.RESET_COMBO_COUNT;}
+                    
+      game_fsm.INCREASE_COMBO_COUNT:  
+        alufn = b000000; //ADD
+        regfile_read_address_a = b0100; // read value of combocount    
+        asel = b00; // read from regfile a
+        bsel = b01; // value of 1
+        we_regfile = 1;  
+        regfile_write_address = b0100; // write into combo count reg
+        game_fsm.d = game_fsm.INCREASE_SCORE;   
+ 
+      game_fsm.RESET_COMBO_COUNT:
+        alu_out_sel = b11;
+        we_regfile = 1;
+        regfile_write_address = b0100;
+        game_fsm.d = game_fsm.INCREASE_SCORE;
+          
+      game_fsm.INCREASE_SCORE:
+        alufn = b000000; //ADD
+        regfile_read_address_a = b0011; // read value of current score
+        regfile_read_address_b = b0100; // read value of combo count      
+        asel = b00; // read from regfile a
+        bsel = b00; // read from regfile b
+        we_regfile = 1;  
+        regfile_write_address = b0011; // write into combo count reg
+        game_fsm.d = game_fsm.INCREASE_ROWCOUNTER;
+         
+      game_fsm.INCREASE_ROWCOUNTER:
+        alufn = b000000; //ADD
+        regfile_read_address_a = b0010; // read value of counter
+        asel = b00; // read from regfile a
+        bsel = b01; // value of 1 
+        we_regfile = 1;  
+        regfile_write_address = b0010; // write into counter
+        game_fsm.d = game_fsm.BRANCH_ROWCOUNTER;
+          
+      game_fsm.BRANCH_ROWCOUNTER:
+        regfile_read_address_b = b0010;
+        if (regfile_datain[4]){ //counts to 4,  16 in binary is 10000
+            game_fsm.d = game_fsm.CHECK_SCORELT30;}
+        else{
+            game_fsm.d = game_fsm.REASSIGN_PREV_ROW;}    
+              
+      game_fsm.REASSIGN_PREV_ROW:
+        alufn = b000000; //ADD
+        regfile_read_address_b = b0000; // read value of old current row, to be written into as the prev row       
+        asel = b01; // value of 0
+        bsel = b00; // read from regfile b
+        we_regfile = 1;  
+        regfile_write_address = b0001; // write into prev row reg
+        game_fsm.d = game_fsm.IDLE; // should branch to 
+
+            
+        
+      game_fsm.BRANCH_CHECK_SCORELT30:
+      regfile_read_address_b = b1111;
+        if (regfile_datain == 1){
+              game_fsm.d = game_fsm.CHECK_SCOREGT45;}
+        else{
+              game_fsm.d = game_fsm.BAD_SCORE;}  
+            
+            
+      game_fsm.BAD_SCORE:
+        we_regfile = 1;
+        alu_out_sel = b11; // one led lights up;
+        regfile_write_address = b0000;//display address on current row
+        game_fsm.d = game_fsm.GAMEOVER;        
+        
+                
+      game_fsm.CHECK_SCOREGT45:
+        alufn = b110101; //CMPLT  A < B
+        regfile_read_address_b = b0011; // read value of score, to be written into as the temp reg       
+        asel = b11; // value of 30
+        bsel = b00; // read from regfile b
+        we_regfile = 1;  
+        regfile_write_address = b1111; // write into temp reg
+        game_fsm.d = game_fsm.BRANCH_CHECK_SCOREGT45;    
+            
+      game_fsm.BRANCH_CHECK_SCOREGT45:
+        regfile_read_address_b = b1111;
+        if (regfile_datain == 1){
+              game_fsm.d = game_fsm.AVG_SCORE;}
+        else{
+              game_fsm.d = game_fsm.GOOD_SCORE;} 
+                  
+      game_fsm.AVG_SCORE:
+        we_regfile = 1;
+        alu_out_sel = b10; // extreme sides lights up
+        regfile_write_address = b0000;//display address on current row
+        game_fsm.d = game_fsm.GAMEOVER;            
+            
+      game_fsm.GOOD_SCORE:
+        we_regfile = 1;
+        alu_out_sel = b01; // fully lights up
+        regfile_write_address = b0000;//display address on current row
+        game_fsm.d = game_fsm.GAMEOVER;
+            
+      game_fsm.GAMEOVER:          
+        debug = b1111;
+        game_fsm.d = game_fsm.GAMEOVER;
+           
+      game_fsm.IDLE:
+        regfile_read_address_b = b0110;
+        if (decrease_timer){ // Clock edge detected from slow timer
+            game_fsm.d = game_fsm.CHECK_GAMETIMER;}
+        else if (buttonpress){
+            game_fsm.d = game_fsm.CURR_PREV_ROW_COMPARE_BITWISE;}                 
+        
+              
+        else if (regfile_datain[0] && rowclock1){ // SHL and when slowclock returns 1
+            game_fsm.d = game_fsm.CURR_SHIFT_LEFT;} 
+        else if (~regfile_datain[0] && rowclock1){ //SHR and when slowclock returns 1
+            game_fsm.d = game_fsm.CURR_SHIFT_RIGHT;}
+        else{
+            game_fsm.d = game_fsm.IDLE;}         
+                        
+ 
+          
+                              
+    }
+  }
+}           
+            
+        
+    

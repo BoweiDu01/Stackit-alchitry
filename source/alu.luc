@@ -1,0 +1,47 @@
+module alu (
+  // do NOT change the interface
+    input a[16],
+    input b[16],
+    input alufn_signal[6],
+    output out[16],
+    output zvn[3]
+  ) {
+  
+    // declare your ALU units here 
+  adder adder;
+  boolean boolean;
+  shifter shifter;
+  compare compare; 
+  multiplier multiplier;
+  
+  always {
+    // default values to silence errors 
+    adder.a = a;
+    adder.b = b;
+    zvn[2] = adder.z;
+    zvn[1]  = adder.v;
+    zvn[0]  = adder.n;
+    adder.alufn_signal = alufn_signal;
+    boolean.a = a;
+    boolean.b = b;
+    boolean.alufn_signal = alufn_signal;
+    shifter.a = a;
+    shifter.b = b[4:0];
+    shifter.alufn_signal = alufn_signal;
+    compare.z = adder.z;
+    compare.v = adder.v;
+    compare.n = adder.n;
+    compare.alufn_signal = alufn_signal;
+    multiplier.a = a;
+    multiplier.b = b;
+           
+    case(alufn_signal[5:4]){
+      b00: out = alufn_signal[1] ? multiplier.mul: adder.out; //ADD or MULTIPLY
+      b01: out = boolean.bool; //BOOLEAN
+      b10: out = shifter.shift; //SHIFTER
+      b11: out = alufn_signal[3] ? ~compare.cmp : compare.cmp; //COMPARE
+      default: out = 16x{0};
+    }
+    
+  }
+}

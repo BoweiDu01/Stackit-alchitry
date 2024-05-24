@@ -1,0 +1,124 @@
+module blockit_beta (
+    input buttonpress,
+    input clk,  // clock
+    input rst,  // reset
+    output decimal_counter_increase, // for score
+    output decimal_counter_rst,
+    output currentrow[16],
+    output previousrow[16],
+    output rowcounter[16],
+    output blockdirection[16],
+    output currenttimer[16],
+    output combocount[16],
+    output score[16],
+    output stack1[16],
+    output stack2[16],
+    output stack3[16],
+    output stack4[16],
+    output stack5[16],
+    output distfromleft[16],
+    output finaloutput[16]
+  ) {
+      //temp variables
+    sig inputAlu_a[16];
+    sig inputAlu_b[16];
+    
+    alu game_alu;
+  
+    .clk(clk){
+      edge_detector row_clock1_detector(#RISE(1), #FALL(0));
+      edge_detector game_timer_detector(#RISE(1), #FALL(0));
+    
+    .rst(rst){
+      blockit_controlunit controlunit;
+      blockit_regfile regfile;
+      
+      //variable_counter vc;
+      counter slowclock(#SIZE(1),#DIV(22)); // for row shift
+
+      counter slow_timer(#SIZE(1),#DIV(24)); // for timer countdown  
+
+    }
+  }
+
+  always {
+    //edge detectors
+    row_clock1_detector.in = slowclock.value; // row speed
+    game_timer_detector.in = slow_timer.value; // 60 second timer detector
+    
+    //pass timer signal to CU unit 
+    controlunit.decrease_timer = game_timer_detector.out;
+    controlunit.buttonpress = buttonpress; // au_top utilises buttonpress (edge_detector)
+    controlunit.rowclock1 = row_clock1_detector.out;
+
+    
+    //output of CU to increase 7segment
+    decimal_counter_increase = controlunit.decimal_counter_increase; // 7 seg value increase, might change to display score
+    decimal_counter_rst = controlunit.decimal_counter_rst;
+    
+ 
+    
+    //Setup REGFILE unit 
+    regfile.we = controlunit.we_regfile;
+    regfile.write_address = controlunit.regfile_write_address;
+   
+    regfile.read_address_a = controlunit.regfile_read_address_a;
+    regfile.read_address_b = controlunit.regfile_read_address_b;
+    
+    //bootstrap reg_b output to CU for convenient branching conditions
+    controlunit.regfile_datain = regfile.out_b;  
+    
+        //asel mux
+    case(controlunit.asel){
+      b00  : inputAlu_a = regfile.out_a;
+      b01  : inputAlu_a = 0;
+      b10  : inputAlu_a = h1E; // 30
+      b11  : inputAlu_a = h2D; // comparision for score
+      default : 
+          inputAlu_a = 0;
+    }
+    
+    //bsel mux
+    case(controlunit.bsel){
+      b00 : inputAlu_b = regfile.out_b;
+      b01 : inputAlu_b = 1;
+      b10 : inputAlu_b = h8000;
+      b11 : inputAlu_b = h10;
+      default: //necessary to init
+          inputAlu_b = 0;
+      
+    }
+    
+    //ALU
+    game_alu.a = inputAlu_a;
+    game_alu.b = inputAlu_b;
+    game_alu.alufn_signal = controlunit.alufn;
+   
+    
+    //wdsel mux
+    case (controlunit.alu_out_sel){
+      b01 : regfile.data = hFFFF;
+      b10 : regfile.data = hF00F;
+      b11 : regfile.data = b1;
+      default : //b00
+          regfile.data = game_alu.out;
+    }
+    
+    //for debugging
+    currentrow = regfile.currentrow;
+    previousrow = regfile.previousrow;
+    rowcounter = regfile.rowcounter;
+    blockdirection = regfile.blockdirection;
+    currenttimer = regfile.currenttimer;
+    combocount = regfile.combocount;
+    score = regfile.score;
+    stack1 = regfile.stack1;
+    stack2 = regfile.stack2;
+    stack3 = regfile.stack3;
+    stack4 = regfile.stack4;
+    stack5 = regfile.stack5;
+    distfromleft = regfile.distfromleft;
+    finaloutput = controlunit.debug;
+ 
+  }
+}

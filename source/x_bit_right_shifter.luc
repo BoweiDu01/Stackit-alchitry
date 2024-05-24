@@ -1,0 +1,29 @@
+module x_bit_right_shifter #(
+    SHIFT = 8 : SHIFT > -1 & SHIFT < 16)(
+    input a[16],
+    input pad,
+    input shift,
+    output out[16]
+  ) {
+  var i;
+  sig shifted_bits[16];
+  mux_2 mux32[16];
+  always { 
+    case (SHIFT) {
+      8: shifted_bits = c{8x{pad},a[15:8]};
+      4: shifted_bits = c{4x{pad},a[15:4]};
+      2: shifted_bits = c{2x{pad},a[15:2]};
+      1: shifted_bits = c{1x{pad},a[15:1]};
+      default: 
+        shifted_bits = a;
+    }
+    for (i = 0; i < 16; i++) {
+      mux32.in[i][0] = a[i];
+      mux32.in[i][1] = shifted_bits[i];
+      mux32.s0[i] = shift;
+       
+    }
+    out = mux32.out; 
+  }
+}
+

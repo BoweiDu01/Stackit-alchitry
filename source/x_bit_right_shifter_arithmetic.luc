@@ -1,0 +1,37 @@
+module x_bit_right_shifter_arithmetic #(
+  // parameter declaration, to be set during module instantiation
+  // default value given is 8
+  SHIFT = 8 : SHIFT > -1 & SHIFT < 32
+  )(
+    input a[32],
+    input shift,
+    output out[32]
+  ) {
+  
+  // module declarations
+  // declare your mux_2 (32 of them)
+  // other useful variables, e.g: shifted_bits[32]
+  var ctr_1;
+  sig shifted_bits[32];
+  
+  mux_2 mxs[32];
+
+  
+  
+  always {
+    // assign value to shifted_bits[32] depending on the value of SHIFT
+    shifted_bits= c{SHIFTx{a[31]},a[31:SHIFT]};
+
+    // connect the selector of each mux_2 with shift 
+    mxs.s0 =32x{shift};
+    // use a for-loop to: 
+    // connect input[0][i] of each mux_2 with the shiftedbits[i]xs
+    // connect input[1][i] of each mux_2 with a[i]
+  
+    for (ctr_1 = 0; ctr_1 < 32; ctr_1++){
+      mxs.in[0][ctr_1] = a[ctr_1];
+      mxs.in[1][ctr_1] = shifted_bits[ctr_1];
+    }
+    out = mxs.out;
+    }
+}

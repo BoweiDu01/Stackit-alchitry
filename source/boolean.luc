@@ -1,0 +1,15 @@
+module boolean (
+    input a[16],
+    input b[16],
+    input alufn_signal[6],
+    output bool[16]
+  ) {
+  mux_4 muxs[16];
+  always {
+    // default values to silence errors 
+    muxs.in = 16x{{alufn_signal[3:0]}};
+    muxs.s0 = a;
+    muxs.s1 = b;
+    bool = muxs.out;
+  }
+}

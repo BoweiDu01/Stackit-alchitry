@@ -1,0 +1,42 @@
+module multiplier (
+    input a[32],
+    input b[32],
+    output mul[32]
+  ) {
+  fa fa[496];
+  var i, j, prev_row_ctr, curr_row_ctr;
+  
+  always {
+    // default values to silence errors 
+    mul[0] = b[0]&a[0];
+    
+    fa.a[30:0] = a[30:0]&30x{b[1]};
+    fa.b[30:0] = a[31:0]&30x{b[0]};
+    
+    fa.ci[0] = 0;
+    
+    for(i = 1; i<32;i++){
+      fa.ci[i] = fa.co[i-1];
+    }
+    
+    mul[1] = fa.s[0];
+    
+    prev_row_ctr = 0;
+    curr_row_ctr = 31;
+    for(i = 2; i<31;i++){
+      for(j =0; j <32-i; j++){
+        fa.a[curr_row_ctr+j] = a[j]&b[i];
+        fa.b[curr_row_ctr+j] = fa.s[prev_row_ctr+1+j];
+        if(j==0){
+          fa.ci[curr_row_ctr+j] = 0;
+        }
+        else{
+          fa.ci[curr_row_ctr+j] = fa.co[curr_row_ctr+j-1];
+        }
+      }
+      mul[i] = fa.s[curr_row_ctr];
+      prev_row_ctr = curr_row_ctr;
+      curr_row_ctr = curr_row_ctr+32-i;
+    }
+  }
+}

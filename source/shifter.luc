@@ -1,0 +1,53 @@
+module shifter  (
+    input a[16],
+    input b[16],
+    input alufn_signal[6],
+    output shift[16]
+  ) {
+  x_bit_left_shifter shiftL8 (#SHIFT(8));
+  x_bit_left_shifter shiftL4 (#SHIFT(4));
+  x_bit_left_shifter shiftL2 (#SHIFT(2));
+  x_bit_left_shifter shiftL1 (#SHIFT(1));
+  
+  x_bit_right_shifter shiftR8 (#SHIFT(8));
+  x_bit_right_shifter shiftR4 (#SHIFT(4));
+  x_bit_right_shifter shiftR2 (#SHIFT(2));
+  x_bit_right_shifter shiftR1 (#SHIFT(1));
+  
+  x_bit_arithmetic_right_shifter shiftRA8 (#SHIFT(8));
+  x_bit_arithmetic_right_shifter shiftRA4 (#SHIFT(4));
+  x_bit_arithmetic_right_shifter shiftRA2 (#SHIFT(2));
+  x_bit_arithmetic_right_shifter shiftRA1 (#SHIFT(1)); 
+  
+  always {
+  /* shiftL8.pad = b0 it replace the overflowwith '0s', check if shiftleft is '1'/'0' if its 1 it will shift by 8 then the output will go to shiftL4*/
+    shiftL8.a = a; shiftL8.pad = b0; shiftL8.shift = b[3];
+    shiftL4.a = shiftL8.out; shiftL4.pad = b0; shiftL4.shift = b[2];
+    shiftL2.a = shiftL4.out; shiftL2.pad = b0; shiftL2.shift = b[1];
+    shiftL1.a = shiftL2.out; shiftL1.pad = b0; shiftL1.shift = b[0];
+
+    shiftR8.a = a; shiftR8.pad = b0; shiftR8.shift = b[3];
+    shiftR4.a = shiftR8.out; shiftR4.pad = b0; shiftR4.shift = b[2];
+    shiftR2.a = shiftR4.out; shiftR2.pad = b0; shiftR2.shift = b[1];
+    shiftR1.a = shiftR2.out; shiftR1.pad = b0; shiftR1.shift = b[0];
+    
+  //shiftRA8.pad = a[15] check the most significant bit value will be the padded value instead the defaut '0's
+    shiftRA8.a = a; shiftRA8.pad = a[15]; shiftRA8.shift = b[3];
+    shiftRA4.a = shiftRA8.out; shiftRA4.pad = a[15]; shiftRA4.shift = b[2];
+    shiftRA2.a = shiftRA4.out; shiftRA2.pad = a[15]; shiftRA2.shift = b[1];
+    shiftRA1.a = shiftRA2.out; shiftRA1.pad = a[15]; shiftRA1.shift = b[0];
+        
+    
+  //Output left/right/right arithmetic shift depends on alufn_signal  
+    case(alufn_signal[1:0]){
+    
+          b11:
+              shift = shiftRA1.out; 
+          b01:
+              shift = shiftR1.out; 
+          b00:
+              shift = shiftL1.out; 
+          default: shift = a;
+    }
+  }
+}

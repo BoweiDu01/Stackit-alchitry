@@ -1,0 +1,45 @@
+module variable_counter 
+#(
+SEED = 128h843233523a613966423b622562592c62: SEED.WIDTH == 128 && SEED[95:0] != 0
+  )
+  (
+    input clk,  // clock
+    input rst,
+    output out,
+    output debug[16]
+  ) {
+
+  
+.clk(clk){
+   edge_detector edge_detector_next;
+   edge_detector edge_detector_seed;
+   dff seed[16]; //don't reset the seed because we don't want the same random number each time we press reset
+    
+  .rst(rst){
+     counter fastclock(#SIZE(1),#DIV(21)); 
+     counter slowclock(#SIZE(1), #DIV(26));
+     pn_gen random_number;
+    }
+ }
+  
+sig temp_pointer[4];
+  
+always {
+    out = 0;
+    random_number.seed = seed.q;
+    edge_detector_next.in = slowclock.value;
+    edge_detector_seed.in = fastclock.value;
+    
+    random_number.next = edge_detector_next.out;
+    temp_pointer = random_number.num[3:0];
+    debug = random_number.num[15:0];
+    
+    if(edge_detector_seed.out){
+      seed.d = seed.q + 1;
+    }
+    
+    out = seed.q[temp_pointer]; // select LSB as output signal
+    
+    
+  }
+}
