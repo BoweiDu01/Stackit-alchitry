@@ -1,18 +1,16 @@
-[![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-24ddc0f5d75046c5622901739e7c5dd533143b0c8e959d652212380cedb1ea36.svg)](https://classroom.github.com/a/5YTzVbxp)
-## 50.002 1D Project Group (TEAM-NAME)
 
-(1006633) Du Bowei
-(1006924) Lim Jia Hui,
-(1006933) Zhuang Yang Kun, 
-(1007011) Nicole Cheah Ching Suan,
-(1007012) Mohamed Zuhairi Bin Mohamed Amran,
-(1007037) Yang Rui, 
-(1007150) James Bryan Budiono
+50.002 1D Project Group 
 
 ### The Project
+![CompStruc Poster](https://github.com/BoweiDu01/Stackit-alchitry/assets/161432400/38ece630-ed0f-4788-bf14-245b83df3964)
 
-Add details about your prototype here, perhaps a few photos and how-to-use would be great.
+### Other Details 
+This repository contains lucid code which allows you to create the Stackit game on your Alchitry unit. Requires Vivado and Alchitry Labs software
 
-### Other Details
-
-Any other details
+### How to use:
+1) Download Xilinx Vivado, Java SE and Alchitry Labs IDE
+2) Create a new project in Alchitry Labs
+3) Import files from this repository into your new project
+4) Build the project by pressing the hammer icon on the top. 
+5) Connect ur Alchitry FPGA to your device and run Program
+   
